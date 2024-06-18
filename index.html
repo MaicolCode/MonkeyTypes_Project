@@ -1,16 +1,142 @@
+<head>
+    <title>Monkey Type</title>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
+</head>
+
 <style>
     :root {
         color-scheme: light dark;
-        --yellow: yellow;
+        --yellow: rgb(244, 244, 80);
         --green: green;
         --red: red;
         --black: #222;
+        --gray: #999;
+    }
+
+    body {
+        font-family: "Raleway", system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        font-size: 30px;
+        width: 100%;
+        margin: 0;
+    }
+
+    main {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        width: auto;
+        height: 100%;
+    }
+
+    section {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 6px 20px;
+    }
+
+    p {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 8px;
+        opacity: 0.8;
+    }
+
+    time {
+        color: var(--yellow);
+    }
+
+    input {
+        position: absolute;
+        z-index: 999;
+        top: 30%;
+        left: 0;
+        pointer-events: none;
+
+    }
+
+    letter {
+        color: var(--gray);
+        position: relative;
+
+        &.active::before {
+            content: '|';
+            color: var(--yellow);
+            position: absolute;
+            left: -40%;
+            animation: 2s blink infinite ease-in-out;
+        }
+    }
+
+    @keyframes blink {
+        0% {
+            opacity: 0;
+        }
+
+        50% {
+            opacity: 1;
+        }
+
+        100% {
+            opacity: 0;
+        }
     }
 </style>
 
 
 <body>
     <main>
-        Monkey
+        <section id="game">
+            <time>30</time>
+            <p>
+
+            </p>
+        </section>
+        <input autofocus>
     </main>
 </body>
+
+<script>
+    const $input = document.querySelector('input');
+    const $time = document.querySelector('time');
+    const $paragraph = document.querySelector('p');
+
+    const $words = `create a monkey type project for the practice in use java script, by the video form midu dev, and practice logic in the programing apps, and estudy more temes from education via software development`
+
+    startGame()
+
+
+    // Function for the functionality of the game.
+
+    function startGame() {
+        let timeLeft = 30;
+        let timer = setInterval(() => {
+            timeLeft--;
+            $time.textContent = timeLeft;
+            if (timeLeft === 0) {
+                clearInterval(timer);
+                endGame();
+            }
+        }, 1000);
+
+        $paragraph.innerHTML = $words.split(' ').map((words, index) => {
+            const letter = words.split('')
+            return `<word>
+            ${letter.map((letter) => `<letter>${letter}</letter>`).join('')}
+                </word>`
+        }).join('')
+
+
+        const $firstWord = $paragraph.querySelector('word');
+
+        $firstWord.classList.add('active');
+        $firstWord.querySelector('letter').classList.add('active');
+
+
+    }
+
+    function endGame() {
+
+    }
+</script>
