@@ -1,7 +1,6 @@
 <head>
     <title>Monkey Type</title>
-    <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:ital@0;1&display=swap" rel="stylesheet">
 </head>
 
 <style>
@@ -15,9 +14,10 @@
     }
 
     body {
-        font-family: "Raleway", system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        font-family: 'Raleway', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         font-size: 30px;
-        width: 100%;
+        border: 2px;
+        display: flex;
         margin: 0;
     }
 
@@ -25,22 +25,22 @@
         display: flex;
         flex-direction: column;
         justify-content: center;
-        width: auto;
-        height: 100%;
+        align-items: center;
+        height: 100vh;
+        width: 100vw;
     }
 
     section {
         display: flex;
         flex-direction: column;
-        gap: 6px;
-        padding: 6px 20px;
+        width: 70%;
+        gap: 4px;
+        padding: 16px;
     }
 
     p {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px 8px;
-        opacity: 0.8;
+        gap: 3px 8px;
+        margin: 0;
     }
 
     time {
@@ -53,6 +53,7 @@
         top: 30%;
         left: 0;
         pointer-events: none;
+        opacity: 0;
 
     }
 
@@ -60,26 +61,93 @@
         color: var(--gray);
         position: relative;
 
+        &.active.is-last::before {
+            left: 70%;
+        }
+
         &.active::before {
             content: '|';
-            color: var(--yellow);
+            z-index: -1;
             position: absolute;
-            left: -40%;
-            animation: 2s blink infinite ease-in-out;
+            color: var(--yellow);
+            font-size: 30px;
+            left: -28%;
+            animation: 1s blink infinite ease-in-out;
+        }
+
+
+
+        &.correct {
+            color: var(--green);
+        }
+
+        &.incorrect {
+            color: var(--red);
         }
     }
 
     @keyframes blink {
-        0% {
-            opacity: 0;
-        }
 
-        50% {
+        0%,
+        25% {
             opacity: 1;
         }
 
-        100% {
+        80% {
             opacity: 0;
+        }
+    }
+
+    word {
+        border-bottom: 1px solid transparent;
+        transition: border-color 0.3s ease-in-out;
+
+        &.marked {
+            border-bottom: 2px solid var(--red);
+        }
+    }
+
+    #game {
+        display: flex;
+    }
+
+    #results {
+        display: none;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    h1 {
+        color: var(--yellow);
+    }
+
+    h2 {
+        margin: 0;
+        opacity: 0.8;
+    }
+
+    h3 {
+        margin: 0;
+        color: var(--yellow);
+    }
+
+
+    button {
+        display: inline;
+        background: none;
+        border: solid;
+        color: var(--yellow);
+        width: 30%;
+        padding: 10px;
+        margin-top: 100px;
+        font-size: 40px;
+        cursor: pointer;
+        border-radius: 5px;
+        transition: 0.3s ease-in-out;
+
+        &:hover {
+            background: var(--yellow);
+            color: var(--black);
         }
     }
 </style>
@@ -88,44 +156,65 @@
 <body>
     <main>
         <section id="game">
-            <time>30</time>
-            <p>
-
-            </p>
+            <time></time>
+            <p></p>
+            <input autofocus>
         </section>
-        <input autofocus>
+
+        <section id="results">
+            <h1>It's your result</h1>
+            <h2>wpm</h2>
+            <h3 id="result-wpm"></h3>
+            <h2>accuracy</h2>
+            <h3 id="result-accuracy"></h3>
+            <button id="reset-game"><ion-icon name="reload-outline"></ion-icon></button>
+        </section>
     </main>
 </body>
 
-<script>
+<script type="module">
+
+    import { words as INITIAL_WORDS } from './data.js'
+
     const $input = document.querySelector('input');
     const $time = document.querySelector('time');
     const $paragraph = document.querySelector('p');
+    const $game = document.querySelector('#game');
+    const $results = document.querySelector('#results');
+    const $wpm = document.querySelector('#result-wpm');
+    const $accuracy = document.querySelector('#result-accuracy');
+    const $button = document.querySelector('#reset-game');
 
-    const $words = `create a monkey type project for the practice in use java script, by the video form midu dev, and practice logic in the programing apps, and estudy more temes from education via software development`
+    const TEXT = `create a monkey type project for the practice in use java script by the video form midu dev and practice logic in the programing apps and estudy more temes from education via software development`
+    let words = []
+    const INITIAL_TIME = 5;
+    let currentTime = INITIAL_TIME
+    let playing;
 
     startGame()
-
+    initEvents()
 
     // Function for the functionality of the game.
 
     function startGame() {
-        let timeLeft = 30;
-        let timer = setInterval(() => {
-            timeLeft--;
-            $time.textContent = timeLeft;
-            if (timeLeft === 0) {
-                clearInterval(timer);
-                endGame();
-            }
-        }, 1000);
+        $game.style.display = 'flex';
+        $results.style.display = 'none';
 
-        $paragraph.innerHTML = $words.split(' ').map((words, index) => {
-            const letter = words.split('')
+        $input.value = '';
+
+        playing = false;
+
+        words = INITIAL_WORDS.toSorted(() => Math.random() - 0.5).slice(0, 32)
+
+        $paragraph.innerHTML = words.map((words, index) => {
+            const letters = words.split('')
             return `<word>
-            ${letter.map((letter) => `<letter>${letter}</letter>`).join('')}
+            ${letters.map((letter) => `<letter>${letter}</letter>`).join('')}
                 </word>`
-        }).join('')
+        }).join(' ')
+
+        currentTime = INITIAL_TIME;
+        $time.textContent = currentTime;
 
 
         const $firstWord = $paragraph.querySelector('word');
@@ -136,7 +225,141 @@
 
     }
 
-    function endGame() {
+    function initEvents() {
+
+        document.addEventListener('keydown', (event) => {
+            $input.focus();
+
+            if (!playing) {
+                playing = true
+                let timer = setInterval(() => {
+                    currentTime--;
+                    $time.textContent = currentTime;
+                    if (currentTime === 0) {
+                        clearInterval(timer);
+                        endGame();
+                    }
+                }, 1000);
+            }
+        })
+
+        $input.addEventListener('keydown', onKeyDown)
+        $input.addEventListener('keyup', onKeyUp)
+        $button.addEventListener('click', startGame)
+    }
+
+    function onKeyDown(event) {
+        const $currentWord = $paragraph.querySelector('word.active');
+        const $currentLetter = $currentWord.querySelector('letter.active');
+
+        if (event.key === ' ') {
+            event.preventDefault();
+
+            const $nextWord = $currentWord.nextElementSibling;
+            const $nextLetter = $nextWord.querySelector('letter');
+            $currentWord.classList.remove('active', 'marked');
+            $currentLetter.classList.remove('active');
+
+            $nextWord.classList.add('active');
+            $nextLetter.classList.add('active');
+
+            $input.value = '';
+
+            const hasMissedLetter = $currentWord.querySelectorAll('letter:not(.correct)').length > 0;
+
+            const addClass = hasMissedLetter ? 'marked' : 'correct';
+
+            $currentWord.classList.add(addClass)
+        }
+
+        if (event.key === 'Backspace') {
+            const $prevWord = $currentWord.previousElementSibling;
+            const $prevLetter = $currentLetter.previousElementSibling;
+
+            if (!$prevWord && !$prevLetter) {
+                event.preventDefault();
+                return
+            };
+
+            const $wordMarked = $paragraph.querySelector('word.marked');
+
+            if ($wordMarked && !$prevLetter) {
+                event.preventDefault();
+                $prevWord.classList.remove('marked');
+                $prevWord.classList.add('active');
+
+                const $letterToGo = $prevWord.querySelector('letter:last-child');
+
+                $currentLetter.classList.remove('active');
+                $letterToGo.classList.add('active');
+
+                $input.value = [...$prevWord.querySelectorAll('letter.correct, letter.incorrect')].map($el => {
+                    return $el.classList.contains('correct') ? $el.textContent : '*';
+                }).join('');
+            }
+
+        }
 
     }
+
+    function onKeyUp(event) {
+        const $currentWord = $paragraph.querySelector('word.active');
+        const $currentLetter = $currentWord.querySelector('letter.active');
+
+        const currentWord = $currentWord.innerText.trim();
+
+        const $allLetters = $currentWord.querySelectorAll('letter');
+
+        console.log({ value: $input.value, $currentWord })
+
+        $allLetters.forEach(($letter) => {
+            $letter.classList.remove('correct', 'incorrect');
+        });
+        $currentLetter.classList.remove('active', 'is-last');
+        const inputLength = $input.value.length;
+
+        const $nextLetterEnd = $allLetters[inputLength]
+
+        if ($nextLetterEnd) {
+            $nextLetterEnd.classList.add('active');
+        } else {
+            $currentLetter.classList.add('active', 'is-last');
+        }
+
+
+        $input.value.split('').forEach((char, index) => {
+            const $letter = $allLetters[index];
+            const checkLetter = currentWord[index]
+
+            const isCorrect = char === checkLetter;
+            const letterClass = isCorrect ? 'correct' : 'incorrect';
+
+            $letter.classList.add(letterClass);
+        });
+
+
+
+    }
+
+    function endGame() {
+        $game.style.display = 'none';
+        $results.style.display = 'flex';
+
+        const correctWords = $paragraph.querySelectorAll('word.correct').length;
+        const correctLetters = $paragraph.querySelectorAll('letter.correct').length;
+        const incorrectLetters = $paragraph.querySelectorAll('letter.incorrect').length;
+
+        const totalLetters = correctLetters + incorrectLetters;
+        console.log(correctLetters)
+        const accuracy = totalLetters > 0 ? (correctLetters / totalLetters) * 100 : 0;
+
+        const wpm = correctWords;
+
+        $wpm.textContent = wpm;
+        $accuracy.textContent = accuracy.toFixed(2) + '%';
+    }
+
 </script>
+
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
